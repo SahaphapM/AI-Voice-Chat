@@ -13,8 +13,8 @@
   <body>
     <div class="container">
       <h2>🎤 AI Voice Chat</h2>
-      <div class="text" id="userText">You: <em>...</em></div>
-      <div class="text" id="aiReply">AI: <em>...</em></div>
+      <div class="text" id="userText">Push to Talk</div>
+      <div class="text" id="aiReply">Brian AI: Question me.</div>
       <button class="button" id="micBtn">Hold to Speak</button>
       <div class="loading" id="loading" style="display: none">Thinking...</div>
     </div>
@@ -53,6 +53,7 @@
       micBtn.addEventListener("mousedown", async () => {
         if (micBtn.disabled) return;
 
+        userText.innerHTML = `Listening`; // แสดงข้อความขณะรอรับเสียง
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
         });

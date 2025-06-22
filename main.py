@@ -37,7 +37,7 @@ async def chat(message: str = Form(...)):
     body = {
         "model": "openai/gpt-3.5-turbo",  # หรือทดลองโมเดลฟรี เช่น "mistral-7b-instruct"
         "messages": [
-            {"role": "system", "content": "You are an English speaking coach."},
+            {"role": "system", "content": "Your name is Brian, You are an English speaking coach."},
             {"role": "user", "content": message}
         ]
     }
