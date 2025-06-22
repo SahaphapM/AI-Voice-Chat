@@ -94,10 +94,10 @@ async def chat(message: str = Form(...)):
 # โหลดโมเดล Whisper
 # โหลดโมเดล Whisper สำหรับภาษาอังกฤษเฉพาะ
 model = WhisperModel(
-    "small.en",  # แนะนำให้ใช้ base.en สำหรับสมดุลความเร็วและความแม่นยำ
+    "tiny.en",  # แนะนำให้ใช้ base.en สำหรับสมดุลความเร็วและความแม่นยำ
     device="cpu",
     compute_type="int8",
-    cpu_threads=4  # ใช้ CPU threads ให้เต็มที่ (ปรับตามเครื่อง)
+    # cpu_threads=4  # ใช้ CPU threads ให้เต็มที่ (ปรับตามเครื่อง)
     # download_root="./whisper_models"  # ระบุโฟลเดอร์เก็บโมเดล
 )
 
