@@ -1,0 +1,33 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+
+# VSCode / PyCharm / IDE settings
+.vscode/
+.idea/
+
+# macOS / Windows system files
+.DS_Store
+Thumbs.db
+
+# dotenv (API keys)
+.env
+
+# Log files
+*.log
+
+# Python notebooks
+*.ipynb_checkpoints
+
+# Uvicorn reload artifacts (optional)
+*.reload
