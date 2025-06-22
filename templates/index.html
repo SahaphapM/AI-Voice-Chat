@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Voice Chat</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-   <link href="/static/style.css" rel="stylesheet">
+  <link href="/static/style.css" rel="stylesheet">
 </head>
 <body>
   <div class="container">
@@ -16,6 +16,71 @@
     <div class="loading" id="loading" style="display:none;">Thinking...</div>
   </div>
 
-  <script src="/static/recorder.js"></script> <!-- เชื่อม JS ภายนอก -->
+  <script>
+    let micBtn = document.getElementById('micBtn')
+    let userText = document.getElementById('userText')
+    let aiReply = document.getElementById('aiReply')
+    let loading = document.getElementById('loading')
+    let mediaRecorder, audioChunks = []
+
+    micBtn.addEventListener('mousedown', async () => {
+      if (micBtn.disabled) return
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      audioChunks = []
+
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data)
+
+      mediaRecorder.onstop = async () => {
+        micBtn.disabled = true
+        micBtn.classList.remove('recording')
+        loading.style.display = 'block'
+
+        const blob = new Blob(audioChunks, { type: 'audio/webm' })
+        const formData = new FormData()
+        formData.append("file", blob, "audio.webm")
+
+        // STEP 1: ส่งเสียงไปให้ whisper ที่ backend
+        const res = await fetch("/transcribe", { method: "POST", body: formData })
+        const data = await res.json()
+        const transcript = data.transcript?.trim()
+
+        if (!transcript) {
+          userText.innerHTML = "You: <em>(no voice recognized)</em>"
+          micBtn.disabled = false
+          loading.style.display = 'none'
+          return
+        }
+
+        userText.innerHTML = `You: <strong>${transcript}</strong>`
+
+        // STEP 2: ส่ง transcript ไปหา AI chat
+        const chatForm = new FormData()
+        chatForm.append("message", transcript)
+        const chatRes = await fetch("/chat", { method: "POST", body: chatForm })
+        const chatData = await chatRes.json()
+
+        aiReply.innerHTML = `AI: ${chatData.reply}`
+
+        const utterance = new SpeechSynthesisUtterance(chatData.reply)
+        utterance.lang = 'en-US'
+        utterance.rate = 0.95
+        speechSynthesis.speak(utterance)
+
+        micBtn.disabled = false
+        loading.style.display = 'none'
+      }
+
+      micBtn.classList.add('recording')
+      mediaRecorder.start()
+    })
+
+    micBtn.addEventListener('mouseup', () => {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop()
+      }
+    })
+  </script>
 </body>
 </html>

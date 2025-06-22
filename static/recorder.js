@@ -1,9 +1,4 @@
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-if (!SpeechRecognition) {
-  alert('Speech recognition is not supported in this browser.')
-  throw new Error('Speech recognition not supported')
-}
-const recognition = new SpeechRecognition()
+const recognition = new webkitSpeechRecognition()
 recognition.lang = 'en-US'
 recognition.interimResults = false
 recognition.continuous = true

@@ -8,10 +8,9 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile
 from google.cloud import speech_v1p1beta1 as speech
 import os
-import numpy as np
 import requests
-import librosa
-import whisper
+import tempfile
+from faster_whisper import WhisperModel
 
 
 load_dotenv()
@@ -49,18 +48,18 @@ async def chat(message: str = Form(...)):
 
 
 # โหลดโมเดล Whisper
-model = whisper.load_model("small")  # หรือใช้ "small", "medium",  " 
-
+model = WhisperModel("tiny", device="cpu")  # หรือเลือกขนาดอื่น ตามต้องการ เช่น "base", "small", "medium", "large"
 @app.post("/transcribe")
 async def transcribe(file: UploadFile = File(...)):
+    
     audio_bytes = await file.read()
-    data, sr = librosa.load(io.BytesIO(audio_bytes), sr=16000)  # Resampling ไปที่ 16 kHz
+    with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
+        tmp.write(audio_bytes)
+        tmp_path = tmp.name
 
-    # Whisper รับ float32 values อยู่ในช่วง [-1, +1]
-    audio_float = data.astype(np.float32)
-
-    result = model.transcribe(audio_float, language="en")
-    return {"transcript": result["text"]}
+    segments, _ = model.transcribe(tmp_path)
+    text = " ".join(seg.text for seg in segments)
+    return {"transcript": text.strip()}
 
 # @app.post("/transcribe")
 # async def transcribe(file: UploadFile = File(...)):
