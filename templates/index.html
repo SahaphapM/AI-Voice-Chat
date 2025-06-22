@@ -50,78 +50,92 @@
         speechSynthesis.onvoiceschanged = loadVoices;
       }
 
-      micBtn.addEventListener("mousedown", async () => {
+      // รองรับทั้ง desktop (mouse) และ mobile (touch)
+      function startRecording() {
         if (micBtn.disabled) return;
 
-        userText.innerHTML = `Listening`; // แสดงข้อความขณะรอรับเสียง
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-        audioChunks = [];
+        userText.innerHTML = `Listening`;
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+          mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+          audioChunks = [];
 
-        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+          mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
 
-        mediaRecorder.onstop = async () => {
-          micBtn.disabled = true;
-          micBtn.classList.remove("recording");
-          loading.style.display = "block";
+          mediaRecorder.onstop = async () => {
+            micBtn.disabled = true;
+            micBtn.classList.remove("recording");
+            loading.style.display = "block";
 
-          const blob = new Blob(audioChunks, { type: "audio/webm" });
-          const formData = new FormData();
-          formData.append("file", blob, "audio.webm");
+            const blob = new Blob(audioChunks, { type: "audio/webm" });
+            const formData = new FormData();
+            formData.append("file", blob, "audio.webm");
 
-          // STEP 1: ส่งเสียงไปให้ whisper ที่ backend
-          const res = await fetch("/transcribe", {
-            method: "POST",
-            body: formData,
-          });
-          const data = await res.json();
-          const transcript = data.transcript?.trim();
+            // STEP 1: ส่งเสียงไปให้ whisper ที่ backend
+            const res = await fetch("/transcribe", {
+              method: "POST",
+              body: formData,
+            });
+            const data = await res.json();
+            const transcript = data.transcript?.trim();
 
-          if (!transcript) {
-            userText.innerHTML = "You: <em>(no voice recognized)</em>";
+            if (!transcript) {
+              userText.innerHTML = "You: <em>(no voice recognized)</em>";
+              micBtn.disabled = false;
+              loading.style.display = "none";
+              return;
+            }
+
+            userText.innerHTML = `You: <strong>${transcript}</strong>`;
+
+            // STEP 2: ส่ง transcript ไปหา AI chat
+            const chatForm = new FormData();
+            chatForm.append("message", transcript);
+            const chatRes = await fetch("/chat", {
+              method: "POST",
+              body: chatForm,
+            });
+            const chatData = await chatRes.json();
+
+            const utterance = new SpeechSynthesisUtterance(chatData.reply);
+            utterance.lang = "en-US";
+            utterance.rate = 1;
+            utterance.pitch = 1;
+
+            if (naturalVoice) {
+              utterance.voice = naturalVoice;
+            }
+
+            speechSynthesis.speak(utterance);
+
+            aiReply.innerHTML = `AI: ${chatData.reply}`;
             micBtn.disabled = false;
             loading.style.display = "none";
-            return;
-          }
+          };
 
-          userText.innerHTML = `You: <strong>${transcript}</strong>`;
+          micBtn.classList.add("recording");
+          mediaRecorder.start();
+        });
+      }
 
-          // STEP 2: ส่ง transcript ไปหา AI chat
-          const chatForm = new FormData();
-          chatForm.append("message", transcript);
-          const chatRes = await fetch("/chat", {
-            method: "POST",
-            body: chatForm,
-          });
-          const chatData = await chatRes.json();
-
-          aiReply.innerHTML = `AI: ${chatData.reply}`;
-
-          const utterance = new SpeechSynthesisUtterance(chatData.reply);
-          utterance.lang = "en-US";
-          utterance.rate = 0.95;
-          utterance.pitch = 1.1;
-
-          if (naturalVoice) {
-            utterance.voice = naturalVoice;
-          }
-
-          speechSynthesis.speak(utterance);
-
-          micBtn.disabled = false;
-          loading.style.display = "none";
-        };
-
-        micBtn.classList.add("recording");
-        mediaRecorder.start();
-      });
-
-      micBtn.addEventListener("mouseup", () => {
+      function stopRecording() {
         if (mediaRecorder && mediaRecorder.state === "recording") {
           mediaRecorder.stop();
         }
+      }
+
+      // Desktop
+      micBtn.addEventListener("mousedown", startRecording);
+      micBtn.addEventListener("mouseup", stopRecording);
+
+      // Mobile
+      micBtn.addEventListener("touchstart", (e) => {
+        e.preventDefault(); // ป้องกันการ select/copy
+        startRecording();
+      });
+
+      micBtn.addEventListener("touchend", (e) => {
+        e.preventDefault(); // ป้องกันการ select/copy
+        stopRecording();
       });
 
       // ✅ fallback just in case
