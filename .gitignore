@@ -31,3 +31,4 @@ Thumbs.db
 
 # Uvicorn reload artifacts (optional)
 *.reload
+google_key.json

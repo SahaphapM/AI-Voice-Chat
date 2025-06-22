@@ -1,13 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Voice Chat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+   <link href="/static/style.css" rel="stylesheet">
 </head>
 <body>
-  <h2>🎤 AI Voice Chat</h2>
-  <button onclick="startListening()">Speak</button>
-  <p>You: <span id="userText"></span></p>
-  <p>AI: <span id="aiReply"></span></p>
-  <script src="/static/script.js"></script>
+  <div class="container">
+    <h2>🎤 AI Voice Chat</h2>
+    <div class="text" id="userText">You: <em>...</em></div>
+    <div class="text" id="aiReply">AI: <em>...</em></div>
+    <button class="button" id="micBtn">Hold to Speak</button>
+    <div class="loading" id="loading" style="display:none;">Thinking...</div>
+  </div>
+
+  <script src="/static/recorder.js"></script> <!-- เชื่อม JS ภายนอก -->
 </body>
 </html>
