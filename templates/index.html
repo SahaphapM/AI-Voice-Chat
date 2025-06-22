@@ -1,86 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Voice Chat</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <link href="/static/style.css" rel="stylesheet">
-</head>
-<body>
-  <div class="container">
-    <h2>🎤 AI Voice Chat</h2>
-    <div class="text" id="userText">You: <em>...</em></div>
-    <div class="text" id="aiReply">AI: <em>...</em></div>
-    <button class="button" id="micBtn">Hold to Speak</button>
-    <div class="loading" id="loading" style="display:none;">Thinking...</div>
-  </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Voice Chat</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link href="/static/style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="container">
+      <h2>🎤 AI Voice Chat</h2>
+      <div class="text" id="userText">You: <em>...</em></div>
+      <div class="text" id="aiReply">AI: <em>...</em></div>
+      <button class="button" id="micBtn">Hold to Speak</button>
+      <div class="loading" id="loading" style="display: none">Thinking...</div>
+    </div>
 
-  <script>
-    let micBtn = document.getElementById('micBtn')
-    let userText = document.getElementById('userText')
-    let aiReply = document.getElementById('aiReply')
-    let loading = document.getElementById('loading')
-    let mediaRecorder, audioChunks = []
+    <script>
+      let micBtn = document.getElementById("micBtn");
+      let userText = document.getElementById("userText");
+      let aiReply = document.getElementById("aiReply");
+      let loading = document.getElementById("loading");
+      let mediaRecorder,
+        audioChunks = [];
 
-    micBtn.addEventListener('mousedown', async () => {
-      if (micBtn.disabled) return
+      let naturalVoice = null;
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
-      audioChunks = []
+      function loadVoices() {
+        const voices = speechSynthesis.getVoices();
 
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data)
+        console.log(speechSynthesis.getVoices());
+        // เลือกเสียงที่ฟังดูธรรมชาติ (ขึ้นกับ OS/Browser)
+        naturalVoice = voices.find(
+          (v) => v.name.includes("Brian") // v.name.includes("Google") ||
+          // v.name.includes("Samantha") || v.name.includes("Alex") ||
+          // v.name.includes("Microsoft") || v.name.includes("Zira") ||
+          // v.name.includes("David") || v.name.includes("Microsoft Server") ||
+          // v.name.includes("Microsoft Zira") || v.name.includes("Microsoft David") ||
+          // v.lang === "en-US" || v.lang === "en-GB" ||
+          // v.name.includes("Microsoft") ||
+        );
+      }
 
-      mediaRecorder.onstop = async () => {
-        micBtn.disabled = true
-        micBtn.classList.remove('recording')
-        loading.style.display = 'block'
+      // บาง browser ต้องรอให้ voices โหลดเสร็จก่อน
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices;
+      }
 
-        const blob = new Blob(audioChunks, { type: 'audio/webm' })
-        const formData = new FormData()
-        formData.append("file", blob, "audio.webm")
+      micBtn.addEventListener("mousedown", async () => {
+        if (micBtn.disabled) return;
 
-        // STEP 1: ส่งเสียงไปให้ whisper ที่ backend
-        const res = await fetch("/transcribe", { method: "POST", body: formData })
-        const data = await res.json()
-        const transcript = data.transcript?.trim()
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+        audioChunks = [];
 
-        if (!transcript) {
-          userText.innerHTML = "You: <em>(no voice recognized)</em>"
-          micBtn.disabled = false
-          loading.style.display = 'none'
-          return
+        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+
+        mediaRecorder.onstop = async () => {
+          micBtn.disabled = true;
+          micBtn.classList.remove("recording");
+          loading.style.display = "block";
+
+          const blob = new Blob(audioChunks, { type: "audio/webm" });
+          const formData = new FormData();
+          formData.append("file", blob, "audio.webm");
+
+          // STEP 1: ส่งเสียงไปให้ whisper ที่ backend
+          const res = await fetch("/transcribe", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await res.json();
+          const transcript = data.transcript?.trim();
+
+          if (!transcript) {
+            userText.innerHTML = "You: <em>(no voice recognized)</em>";
+            micBtn.disabled = false;
+            loading.style.display = "none";
+            return;
+          }
+
+          userText.innerHTML = `You: <strong>${transcript}</strong>`;
+
+          // STEP 2: ส่ง transcript ไปหา AI chat
+          const chatForm = new FormData();
+          chatForm.append("message", transcript);
+          const chatRes = await fetch("/chat", {
+            method: "POST",
+            body: chatForm,
+          });
+          const chatData = await chatRes.json();
+
+          aiReply.innerHTML = `AI: ${chatData.reply}`;
+
+          const utterance = new SpeechSynthesisUtterance(chatData.reply);
+          utterance.lang = "en-US";
+          utterance.rate = 0.95;
+          utterance.pitch = 1.1;
+
+          if (naturalVoice) {
+            utterance.voice = naturalVoice;
+          }
+
+          speechSynthesis.speak(utterance);
+
+          micBtn.disabled = false;
+          loading.style.display = "none";
+        };
+
+        micBtn.classList.add("recording");
+        mediaRecorder.start();
+      });
+
+      micBtn.addEventListener("mouseup", () => {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+          mediaRecorder.stop();
         }
+      });
 
-        userText.innerHTML = `You: <strong>${transcript}</strong>`
-
-        // STEP 2: ส่ง transcript ไปหา AI chat
-        const chatForm = new FormData()
-        chatForm.append("message", transcript)
-        const chatRes = await fetch("/chat", { method: "POST", body: chatForm })
-        const chatData = await chatRes.json()
-
-        aiReply.innerHTML = `AI: ${chatData.reply}`
-
-        const utterance = new SpeechSynthesisUtterance(chatData.reply)
-        utterance.lang = 'en-US'
-        utterance.rate = 0.95
-        speechSynthesis.speak(utterance)
-
-        micBtn.disabled = false
-        loading.style.display = 'none'
-      }
-
-      micBtn.classList.add('recording')
-      mediaRecorder.start()
-    })
-
-    micBtn.addEventListener('mouseup', () => {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop()
-      }
-    })
-  </script>
-</body>
+      // ✅ fallback just in case
+      // window.onload = () => {
+      //   loadVoices();
+      // };
+    </script>
+  </body>
 </html>
