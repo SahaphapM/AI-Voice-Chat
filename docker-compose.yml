@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${PORT}:8000"
+      - "9078:9078"
     volumes:
       - .:/app
       # หากต้องการ mount credentials
