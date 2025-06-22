@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  ai-voice-chat:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "${PORT}:8000"
+    volumes:
+      - .:/app
+      # หากต้องการ mount credentials
+      # - ./credentials.json:/app/credentials.json
+    restart: unless-stopped

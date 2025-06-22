@@ -6,7 +6,6 @@ from fastapi.templating import Jinja2Templates
 from fastapi import Request
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile
-from google.cloud import speech_v1p1beta1 as speech
 import os
 import requests
 import tempfile
@@ -61,22 +60,3 @@ async def transcribe(file: UploadFile = File(...)):
     text = " ".join(seg.text for seg in segments)
     return {"transcript": text.strip()}
 
-# @app.post("/transcribe")
-# async def transcribe(file: UploadFile = File(...)):
-#     content = await file.read()
-#     client = speech.SpeechClient()
-
-#     audio = speech.RecognitionAudio(content=content)
-#     config = speech.RecognitionConfig(
-#         encoding=speech.RecognitionConfig.AudioEncoding.WEBM_OPUS,
-#         sample_rate_hertz=48000,
-#         language_code="en-US"
-#     )
-
-#     response = client.recognize(config=config, audio=audio)
-
-#     transcript = ""
-#     for result in response.results:
-#         transcript += result.alternatives[0].transcript + " "
-
-#     return {"transcript": transcript.strip()}
