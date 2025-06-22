@@ -13,10 +13,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4  # ใช้ action เพื่อ checkout โค้ดจาก GitHub
 
-      - name: Connect to VPN
+      - name: Install SoftEther VPN Client (if needed)
         run: |
-          echo "${{ secrets.VPN_CONFIG }}" > vpn-config.ovpn
-          sudo openvpn --config vpn-config.ovpn --auth-user-pass <(echo -e "${{ secrets.VPN_USERNAME }}\n${{ secrets.VPN_PASSWORD }}") &
+          sudo apt update
+          sudo apt install -y softether-vpnclient
+
+      - name: Connect to VPN using vpncmd (SoftEther VPN)
+        run: |
+          # ถ้าใช้ SoftEther VPN Client ให้ตั้งค่าการเชื่อมต่อที่ได้จาก IT หรือไฟล์ที่คุณได้รับ
+          vpncmd <<EOF
+          ServerConnect student-vpn.buu.ac.th  # ใช้เซิร์ฟเวอร์ที่เชื่อมต่อ
+          AccountCreate "MyVPN" /SERVER:student-vpn.buu.ac.th /HUB:VPN /USERNAME:"${{ secrets.VPN_USERNAME }}" /PASSWORD:"${{ secrets.VPN_PASSWORD }}"
+          AccountConnect "MyVPN"
+          EOF
           sleep 10  # รอให้ VPN เชื่อมต่อเสร็จ
 
       - name: Deploy via SSH
