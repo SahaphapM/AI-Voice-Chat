@@ -1,0 +1,34 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: self-hosted  # ใช้ Self-hosted Runner ที่ติดตั้งอยู่ใน VPN
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4  # ใช้ action เพื่อ checkout โค้ดจาก GitHub
+
+      - name: Connect to VPN
+        run: |
+          echo "${{ secrets.VPN_CONFIG }}" > vpn-config.ovpn
+          sudo openvpn --config vpn-config.ovpn --auth-user-pass <(echo -e "${{ secrets.VPN_USERNAME }}\n${{ secrets.VPN_PASSWORD }}") &
+          sleep 10  # รอให้ VPN เชื่อมต่อเสร็จ
+
+      - name: Deploy via SSH
+        uses: webfactory/ssh-agent@v0.6.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Pull latest code and deploy
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            cd ~/Backend-Bluelock-007 &&
+            git pull origin master &&
+            docker-compose down &&
+            docker-compose up -d --build
+          "
