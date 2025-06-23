@@ -56,61 +56,94 @@
 
         userText.innerHTML = `Listening`;
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-          mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+          // ตรวจสอบรูปแบบเสียงที่รองรับบน iOS/Safari
+          let options = { audioBitsPerSecond: 128000 };
+
+          if (MediaRecorder.isTypeSupported("audio/mp4")) {
+            options.mimeType = "audio/mp4"; // รองรับ Safari/iOS
+          } else if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+            options.mimeType = "audio/webm;codecs=opus";
+          } else {
+            options.mimeType = "audio/webm";
+          }
+
+          mediaRecorder = new MediaRecorder(stream, options);
           audioChunks = [];
 
-          mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+              audioChunks.push(e.data);
+            }
+          };
 
           mediaRecorder.onstop = async () => {
             micBtn.disabled = true;
             micBtn.classList.remove("recording");
             loading.style.display = "block";
 
-            const blob = new Blob(audioChunks, { type: "audio/webm" });
-            const formData = new FormData();
-            formData.append("file", blob, "audio.webm");
-
-            // STEP 1: ส่งเสียงไปให้ whisper ที่ backend
-            const res = await fetch("/transcribe", {
-              method: "POST",
-              body: formData,
+            const blob = new Blob(audioChunks, {
+              type: mediaRecorder.mimeType,
             });
-            const data = await res.json();
-            const transcript = data.transcript?.trim();
+            const formData = new FormData();
+            formData.append(
+              "file",
+              blob,
+              `audio.${getExtension(mediaRecorder.mimeType)}`
+            );
 
-            if (!transcript) {
-              userText.innerHTML = "You: <em>(no voice recognized)</em>";
+            try {
+              // STEP 1: ส่งเสียงไปให้ whisper ที่ backend
+              const res = await fetch("/transcribe", {
+                method: "POST",
+                body: formData,
+              });
+              const data = await res.json();
+              const transcript = data.transcript?.trim();
+
+              if (!transcript) {
+                userText.innerHTML = "You: <em>(no voice recognized)</em>";
+                micBtn.disabled = false;
+                loading.style.display = "none";
+                return;
+              }
+
+              userText.innerHTML = `You: <strong>${transcript}</strong>`;
+
+              // STEP 2: ส่ง transcript ไปหา AI chat
+              const chatForm = new FormData();
+              chatForm.append("message", transcript);
+              const chatRes = await fetch("/chat", {
+                method: "POST",
+                body: chatForm,
+              });
+              const chatData = await chatRes.json();
+
+              const utterance = new SpeechSynthesisUtterance(chatData.reply);
+              utterance.lang = "en-US";
+              utterance.rate = 1;
+              utterance.pitch = 1;
+
+              // รอให้เสียงโหลดเสร็จถ้ายังไม่พร้อม
+              if (naturalVoice) {
+                utterance.voice = naturalVoice;
+              } else {
+                loadVoices();
+                const voices = speechSynthesis.getVoices();
+                utterance.voice =
+                  voices.find((v) => v.lang.includes("en")) || voices[0];
+              }
+
+              speechSynthesis.speak(utterance);
+
+              aiReply.innerHTML = `AI: ${chatData.reply}`;
+            } catch (error) {
+              console.error("Error:", error);
+              userText.innerHTML = "Error occurred";
+              aiReply.innerHTML = "Please try again";
+            } finally {
               micBtn.disabled = false;
               loading.style.display = "none";
-              return;
             }
-
-            userText.innerHTML = `You: <strong>${transcript}</strong>`;
-
-            // STEP 2: ส่ง transcript ไปหา AI chat
-            const chatForm = new FormData();
-            chatForm.append("message", transcript);
-            const chatRes = await fetch("/chat", {
-              method: "POST",
-              body: chatForm,
-            });
-            const chatData = await chatRes.json();
-
-            const utterance = new SpeechSynthesisUtterance(chatData.reply);
-            utterance.lang = "en-US";
-            utterance.rate = 1;
-            utterance.pitch = 1;
-
-            if (naturalVoice) {
-              console.log(naturalVoice);
-            }
-            utterance.voice = naturalVoice;
-
-            speechSynthesis.speak(utterance);
-
-            aiReply.innerHTML = `AI: ${chatData.reply}`;
-            micBtn.disabled = false;
-            loading.style.display = "none";
           };
 
           micBtn.classList.add("recording");
@@ -139,10 +172,17 @@
         stopRecording();
       });
 
-      // ✅ fallback just in case
-      // window.onload = () => {
-      //   loadVoices();
-      // };
+      // แก้ไข event listeners for iOS
+      micBtn.addEventListener("pointerdown", startRecording);
+      micBtn.addEventListener("pointerup", stopRecording);
+      micBtn.addEventListener("touchcancel", stopRecording); // สำคัญสำหรับ iOS
+
+      // ฟังก์ชันช่วยในการได้ส่วนขยายไฟล์จาก MIME type
+      function getExtension(mimeType) {
+        if (mimeType.includes("mp4")) return "mp4";
+        if (mimeType.includes("webm")) return "webm";
+        return "wav";
+      }
     </script>
   </body>
 </html>
