@@ -13,6 +13,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4 # ใช้ action เพื่อ checkout โค้ดจาก GitHub
 
+      # set git pull
+      - name: Set up git to allow pulling
+        run: |
+          cd ~/AI-Voice-Chat
+          git pull
+
       - name: Stop and Remove old containers (if any)
         run: |
           cd ~/AI-Voice-Chat
