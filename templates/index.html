@@ -29,13 +29,18 @@
 
       let naturalVoice = null;
 
+      const utterance = new SpeechSynthesisUtterance(chatData.reply);
+      utterance.lang = "en-US";
+      utterance.rate = 1;
+      utterance.pitch = 1;
+
       function loadVoices() {
         const voices = speechSynthesis.getVoices();
 
         console.log(speechSynthesis.getVoices());
         // เลือกเสียงที่ฟังดูธรรมชาติ (ขึ้นกับ OS/Browser)
         naturalVoice = voices.find(
-          (v) => v.name.includes("Brian") // v.name.includes("Google") ||
+          (v) => v.name.includes("Andrew") // v.name.includes("Google") ||
           // v.name.includes("Samantha") || v.name.includes("Alex") ||
           // v.name.includes("Microsoft") || v.name.includes("Zira") ||
           // v.name.includes("David") || v.name.includes("Microsoft Server") ||
@@ -96,14 +101,10 @@
             });
             const chatData = await chatRes.json();
 
-            const utterance = new SpeechSynthesisUtterance(chatData.reply);
-            utterance.lang = "en-US";
-            utterance.rate = 1;
-            utterance.pitch = 1;
-
             if (naturalVoice) {
-              utterance.voice = naturalVoice;
+              console.log(naturalVoice);
             }
+            utterance.voice = naturalVoice;
 
             speechSynthesis.speak(utterance);
 
