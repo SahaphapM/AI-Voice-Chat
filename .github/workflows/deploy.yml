@@ -12,26 +12,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4 # ใช้ action เพื่อ checkout โค้ดจาก GitHub
+        with:
+          # ถ้าคุณต้องการให้ runner ดึงโค้ดใหม่เสมอ ไม่ต้องระบุ token ก็ได้ แต่ถ้ามี submodules หรือ private repos อาจจะต้อง
+          # token: ${{ secrets.GITHUB_TOKEN }}
 
-      # # ใช้สคริปต์ VPN ที่มีอยู่ (ไม่ต้อง sudo)
-      # - name: Connect to VPN
-      #   env:
-      #     VPN_USERNAME: ${{ secrets.VPN_USER }}
-      #     VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
-      #     VPN_BUU: ${{ secrets.VPN_BUU }} # ตรวจสอบชื่อตัวแปรให้ตรงกับในสคริปต์
-      #   run: |
-      #     cd ~
-      #     chmod +x ./vpn-connect.sh  # เพิ่มบรรทัดนี้
-      #     ./vpn-connect.sh
-      #     sleep 5 # รอให้ VPN เชื่อมต่อ
-
-      # Test deploy2
-      # ดึงโค้ดและ deploy
-      - name: Pull and deploy
+      - name: Stop and Remove old containers (if any)
         run: |
           cd ~/AI-Voice-Chat
-          git pull origin main # เปลี่ยน branch ตามต้องการ
+          # ใช้ if condition เพื่อให้แน่ใจว่ามี container รันอยู่ก่อนจะ down
+          if docker compose ps -q | grep -q .; then
+            docker compose down
+          fi
 
-          # ใช้ full path ของ docker-compose
-          ~/bin/docker-compose down
-          ~/bin/docker-compose up -d --build
+      - name: Build and Start new containers
+        run: |
+          cd ~/AI-Voice-Chat
+          # docker compose up -d --build
+        # --remove-orphans # --remove-orphans เพื่อลบ container ที่ไม่ได้อยู่ใน compose file ออกไป
