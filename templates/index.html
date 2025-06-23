@@ -29,11 +29,6 @@
 
       let naturalVoice = null;
 
-      const utterance = new SpeechSynthesisUtterance(chatData.reply);
-      utterance.lang = "en-US";
-      utterance.rate = 1;
-      utterance.pitch = 1;
-
       function loadVoices() {
         const voices = speechSynthesis.getVoices();
 
@@ -100,6 +95,11 @@
               body: chatForm,
             });
             const chatData = await chatRes.json();
+
+            const utterance = new SpeechSynthesisUtterance(chatData.reply);
+            utterance.lang = "en-US";
+            utterance.rate = 1;
+            utterance.pitch = 1;
 
             if (naturalVoice) {
               console.log(naturalVoice);

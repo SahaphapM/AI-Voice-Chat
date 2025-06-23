@@ -21,9 +21,7 @@ body {
   width: 100%;
   text-align: center;
 }
-#micBtn {
-  touch-action: none; /* ป้องกันการเลือกหรือคัดลอกข้อความ */
-}
+
 .button {
   background-color: #111827;
   color: white;
@@ -34,6 +32,7 @@ body {
   font-size: 1.1rem;
   margin-top: 1rem;
   transition: background-color 0.2s, transform 0.1s ease-in-out;
+  touch-action: none; /* ป้องกันการเลือกหรือคัดลอกข้อความ */
 }
 .button:active {
   transform: scale(0.96);
