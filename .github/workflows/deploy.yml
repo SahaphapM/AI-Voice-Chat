@@ -12,9 +12,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4 # ใช้ action เพื่อ checkout โค้ดจาก GitHub
-        with:
-          # ถ้าคุณต้องการให้ runner ดึงโค้ดใหม่เสมอ ไม่ต้องระบุ token ก็ได้ แต่ถ้ามี submodules หรือ private repos อาจจะต้อง
-          # token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Stop and Remove old containers (if any)
         run: |
