@@ -55,9 +55,7 @@ async def chat(message: str = Form(...)):
                 "content": (
                     "You are Brian, an English speaking coach. Your responses MUST:\n"
                     "1. Be in English ONLY\n"
-                    "2. Correct user's grammar mistakes concisely\n"
-                    "3. Give 1 short practice tip\n"
-                    "4. Keep responses to 1-2 sentences MAX\n"
+                    "4. Keep responses to 1-3 sentences MAX\n"
                 )
             },
             {"role": "user", "content": message}
