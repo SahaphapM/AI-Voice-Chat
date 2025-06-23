@@ -25,7 +25,7 @@ jobs:
       #     ./vpn-connect.sh
       #     sleep 5 # รอให้ VPN เชื่อมต่อ
 
-      # Test deploy
+      # Test deploy2
       # ดึงโค้ดและ deploy
       - name: Pull and deploy
         run: |
