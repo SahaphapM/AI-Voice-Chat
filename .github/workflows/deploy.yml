@@ -15,8 +15,13 @@ jobs:
 
       # ใช้สคริปต์ VPN ที่มีอยู่ (ไม่ต้อง sudo)
       - name: Connect to VPN
+        env:
+          VPN_USERNAME: ${{ secrets.VPN_USER }}
+          VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
+          VPN_BUU: ${{ secrets.VPN_SERVER }} # ตรวจสอบชื่อตัวแปรให้ตรงกับในสคริปต์
         run: |
           cd ~
+          chmod +x ./vpn-connect.sh  # เพิ่มบรรทัดนี้
           ./vpn-connect.sh
           sleep 5 # รอให้ VPN เชื่อมต่อ
 
