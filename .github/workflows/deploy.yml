@@ -18,7 +18,7 @@ jobs:
         env:
           VPN_USERNAME: ${{ secrets.VPN_USER }}
           VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
-          VPN_BUU: ${{ secrets.VPN_SERVER }} # ตรวจสอบชื่อตัวแปรให้ตรงกับในสคริปต์
+          VPN_BUU: ${{ secrets.VPN_BUU }} # ตรวจสอบชื่อตัวแปรให้ตรงกับในสคริปต์
         run: |
           cd ~
           chmod +x ./vpn-connect.sh  # เพิ่มบรรทัดนี้
