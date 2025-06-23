@@ -21,6 +21,9 @@ body {
   width: 100%;
   text-align: center;
 }
+#micBtn {
+  touch-action: none; /* ป้องกันการเลือกหรือคัดลอกข้อความ */
+}
 .button {
   background-color: #111827;
   color: white;
